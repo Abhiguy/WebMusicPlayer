@@ -15,7 +15,8 @@
     </label>
 
     <h2 id="song-title">No song playing</h2>
-    <img id="album-art" src="default.jpg" alt="Album Art" />
+    <!-- Use a placeholder inline SVG as album art -->
+    <img id="album-art" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNjY2MiIC8+PHRleHQgeD0iNTAiIHk9IjUwIiBmb250LXNpemU9IjE2IiBmb250LXdlaWdodD0iYm9sZCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzAwMCI+Tm8gQWxidW08L3RleHQ+PC9zdmc+" alt="Album Art" />
 
     <!-- Custom Player -->
     <div class="player-ui">
@@ -31,6 +32,16 @@
     </div>
 
     <input type="file" id="fileInput" accept=".mp3,.ogg,.wav" hidden />
+
+    <!-- YouTube Link Input Section -->
+    <div class="youtube-section" style="margin-top:15px;">
+      <input type="text" id="youtube-link" placeholder="Paste YouTube link here" 
+             style="width:100%;padding:10px;border-radius:10px;border:none;outline:none;">
+      <button id="play-youtube" 
+              style="margin-top:10px;padding:10px 15px;border:none;border-radius:10px;background:#1f1f1f;color:white;cursor:pointer;">
+        ▶️ Play from YouTube
+      </button>
+    </div>
 
     <!-- Visualizer -->
     <div class="visualizer" id="visualizer">
