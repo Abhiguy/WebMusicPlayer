@@ -1,23 +1,21 @@
 // ===============================
-// 🎵 Music Player Script (Deno & Browser Safe) 🎵
+// 🎵 Music Player Script (Browser Safe) 🎵
 // ===============================
 
 if (typeof window !== "undefined") {
-  // ===============================
   // IndexedDB Setup
-  // ===============================
-  let db: IDBDatabase | null = null;
+  var db = null;
 
   if ("indexedDB" in window) {
-    const request = indexedDB.open("MusicPlayerDB", 1);
+    var request = indexedDB.open("MusicPlayerDB", 1);
 
     request.onupgradeneeded = function (event) {
-      db = (event.target as IDBOpenDBRequest).result;
+      db = event.target.result;
       db.createObjectStore("songs", { keyPath: "name" });
     };
 
     request.onsuccess = function (event) {
-      db = (event.target as IDBOpenDBRequest).result;
+      db = event.target.result;
       loadLastSong();
     };
 
@@ -28,33 +26,29 @@ if (typeof window !== "undefined") {
     console.warn("IndexedDB not supported in this environment.");
   }
 
-  // ===============================
   // DOM Elements
-  // ===============================
-  const audio = document.getElementById("audio") as HTMLAudioElement;
+  var audio = document.getElementById("audio");
   audio.setAttribute("preload", "auto");
   audio.controls = false;
   audio.style.display = "none";
 
-  const progress = document.getElementById("progress") as HTMLInputElement;
-  const volume = document.getElementById("volume") as HTMLInputElement;
-  const playBtn = document.getElementById("play") as HTMLButtonElement;
-  const loopBtn = document.getElementById("loop") as HTMLButtonElement;
-  const uploadBtn = document.getElementById("upload") as HTMLButtonElement;
-  const fileInput = document.getElementById("fileInput") as HTMLInputElement;
-  const songTitle = document.getElementById("song-title") as HTMLElement;
-  const albumArt = document.getElementById("album-art") as HTMLImageElement;
-  const themeToggle = document.getElementById("themeToggle") as HTMLInputElement;
-  const forwardBtn = document.getElementById("forward") as HTMLButtonElement;
-  const backwardBtn = document.getElementById("backward") as HTMLButtonElement;
-  const youtubeInput = document.getElementById("youtube-link") as HTMLInputElement;
-  const youtubeBtn = document.getElementById("play-youtube") as HTMLButtonElement;
+  var progress = document.getElementById("progress");
+  var volume = document.getElementById("volume");
+  var playBtn = document.getElementById("play");
+  var loopBtn = document.getElementById("loop");
+  var uploadBtn = document.getElementById("upload");
+  var fileInput = document.getElementById("fileInput");
+  var songTitle = document.getElementById("song-title");
+  var albumArt = document.getElementById("album-art");
+  var themeToggle = document.getElementById("themeToggle");
+  var forwardBtn = document.getElementById("forward");
+  var backwardBtn = document.getElementById("backward");
+  var youtubeInput = document.getElementById("youtube-link");
+  var youtubeBtn = document.getElementById("play-youtube");
 
-  // ===============================
   // Loop & Theme State
-  // ===============================
-  let isLooping = JSON.parse(localStorage.getItem("loopEnabled") || "false");
-  let theme = localStorage.getItem("theme") || "dark";
+  var isLooping = JSON.parse(localStorage.getItem("loopEnabled") || "false");
+  var theme = localStorage.getItem("theme") || "dark";
 
   audio.loop = isLooping;
   loopBtn.style.color = isLooping ? "cyan" : "white";
@@ -65,42 +59,40 @@ if (typeof window !== "undefined") {
       : "linear-gradient(135deg, #0f0c29, #000000, #0f0f13)";
   document.body.style.color = theme === "light" ? "#222" : "white";
 
-  // ===============================
   // Upload & Save to IndexedDB
-  // ===============================
-  uploadBtn.onclick = () => fileInput.click();
+  uploadBtn.onclick = function () { fileInput.click(); };
 
-  fileInput.onchange = () => {
-    const file = fileInput.files?.[0];
+  fileInput.onchange = function () {
+    var file = fileInput.files && fileInput.files[0];
     if (!file) return;
 
-    const reader = new FileReader();
+    var reader = new FileReader();
     reader.onload = function (e) {
-      const result = e.target?.result;
+      var result = e.target && e.target.result;
       if (!result) return;
 
-      if (db) saveSongToDB(file.name, result as ArrayBuffer);
-      playSong(result as ArrayBuffer, file.name);
+      if (db) saveSongToDB(file.name, result);
+      playSong(result, file.name);
     };
     reader.readAsArrayBuffer(file);
   };
 
-  function saveSongToDB(name: string, buffer: ArrayBuffer) {
+  function saveSongToDB(name, buffer) {
     if (!db) return;
-    const transaction = db.transaction(["songs"], "readwrite");
-    const store = transaction.objectStore("songs");
-    store.put({ name, data: buffer });
+    var transaction = db.transaction(["songs"], "readwrite");
+    var store = transaction.objectStore("songs");
+    store.put({ name: name, data: buffer });
     localStorage.setItem("lastSong", name);
   }
 
   function loadLastSong() {
     if (!db) return;
-    const lastSong = localStorage.getItem("lastSong");
+    var lastSong = localStorage.getItem("lastSong");
     if (!lastSong) return;
 
-    const transaction = db.transaction(["songs"], "readonly");
-    const store = transaction.objectStore("songs");
-    const request = store.get(lastSong);
+    var transaction = db.transaction(["songs"], "readonly");
+    var store = transaction.objectStore("songs");
+    var request = store.get(lastSong);
 
     request.onsuccess = function () {
       if (request.result) {
@@ -109,18 +101,16 @@ if (typeof window !== "undefined") {
     };
   }
 
-  function playSong(arrayBuffer: ArrayBuffer, name: string) {
+  function playSong(arrayBuffer, name) {
     audio.src = URL.createObjectURL(new Blob([arrayBuffer], { type: "audio/mp3" }));
     audio.loop = isLooping;
-    audio.play().then(() => (playBtn.textContent = "⏸️"));
+    audio.play().then(function () { playBtn.textContent = "⏸️"; });
     songTitle.textContent = name;
     albumArt.src = "album.jpg";
   }
 
-  // ===============================
   // Core Player Controls
-  // ===============================
-  playBtn.onclick = () => {
+  playBtn.onclick = function () {
     if (audio.paused) {
       audio.play();
       playBtn.textContent = "⏸️";
@@ -130,14 +120,14 @@ if (typeof window !== "undefined") {
     }
   };
 
-  loopBtn.onclick = () => {
+  loopBtn.onclick = function () {
     isLooping = !isLooping;
     audio.loop = isLooping;
     loopBtn.style.color = isLooping ? "cyan" : "white";
     localStorage.setItem("loopEnabled", JSON.stringify(isLooping));
   };
 
-  themeToggle.onchange = () => {
+  themeToggle.onchange = function () {
     theme = themeToggle.checked ? "light" : "dark";
     localStorage.setItem("theme", theme);
     document.body.style.background =
@@ -147,63 +137,56 @@ if (typeof window !== "undefined") {
     document.body.style.color = theme === "light" ? "#222" : "white";
   };
 
-  // ===============================
   // Progress Bar
-  // ===============================
-  audio.ontimeupdate = () => {
-    if (audio.duration) progress.value = ((audio.currentTime / audio.duration) * 100).toString();
+  audio.ontimeupdate = function () {
+    if (audio.duration) progress.value = ((audio.currentTime / audio.duration) * 100);
   };
 
-  progress.oninput = () => {
+  progress.oninput = function () {
     audio.currentTime = (parseFloat(progress.value) / 100) * audio.duration;
   };
 
-  // ===============================
   // Volume
-  // ===============================
-  volume.oninput = () => (audio.volume = parseFloat(volume.value));
+  volume.oninput = function () { audio.volume = parseFloat(volume.value); };
   volume.value = "0.8";
   audio.volume = 0.8;
 
-  // ===============================
   // Forward / Backward
-  // ===============================
-  forwardBtn.onclick = () => (audio.currentTime = Math.min(audio.currentTime + 10, audio.duration));
-  backwardBtn.onclick = () => (audio.currentTime = Math.max(audio.currentTime - 10, 0));
+  forwardBtn.onclick = function () { audio.currentTime = Math.min(audio.currentTime + 10, audio.duration); };
+  backwardBtn.onclick = function () { audio.currentTime = Math.max(audio.currentTime - 10, 0); };
 
-  // ===============================
-  // 🎵 YouTube Audio Playback
-  // ===============================
-  youtubeBtn.onclick = async () => {
-    const url = youtubeInput.value.trim();
+  // YouTube Audio Playback
+  youtubeBtn.onclick = async function () {
+    var url = youtubeInput.value.trim();
     if (!url) return alert("Please paste a YouTube link.");
 
-    const match = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    var match = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
     if (!match) return alert("Invalid YouTube link!");
 
-    const videoId = match[1];
-    const mirrors = [
+    var videoId = match[1];
+    var mirrors = [
       "https://pipedapi.in.projectsegfau.lt",
       "https://pipedapi.kavin.rocks",
       "https://pipedapi.moomoo.me",
       "https://pipedapi.palveluntarjoaja.eu"
     ];
 
-    let data;
-    for (const base of mirrors) {
+    var data;
+    for (var i = 0; i < mirrors.length; i++) {
+      var base = mirrors[i];
       try {
-        const res = await fetch(`${base}/streams/${videoId}`);
+        var res = await fetch(base + "/streams/" + videoId);
         if (!res.ok) continue;
         data = await res.json();
         if (data && data.audioStreams) break;
-      } catch {}
+      } catch (e) {}
     }
 
     if (!data || !data.audioStreams) return alert("Failed to load YouTube audio.");
 
-    const audioStream = data.audioStreams.find(
-      (s: any) => s.audioOnly && s.mimeType.includes("audio/mp4")
-    );
+    var audioStream = data.audioStreams.find(function (s) {
+      return s.audioOnly && s.mimeType.includes("audio/mp4");
+    });
     if (!audioStream) return alert("No playable audio found.");
 
     audio.src = audioStream.url;
