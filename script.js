@@ -1,24 +1,18 @@
-// ===============================
 // 🎵 Music Player Script (Browser Safe) 🎵
-// ===============================
-
 if (typeof window !== "undefined") {
+
   // IndexedDB Setup
   var db = null;
-
   if ("indexedDB" in window) {
     var request = indexedDB.open("MusicPlayerDB", 1);
-
     request.onupgradeneeded = function (event) {
       db = event.target.result;
       db.createObjectStore("songs", { keyPath: "name" });
     };
-
     request.onsuccess = function (event) {
       db = event.target.result;
       loadLastSong();
     };
-
     request.onerror = function () {
       console.error("IndexedDB failed to open");
     };
@@ -28,10 +22,6 @@ if (typeof window !== "undefined") {
 
   // DOM Elements
   var audio = document.getElementById("audio");
-  audio.setAttribute("preload", "auto");
-  audio.controls = false;
-  audio.style.display = "none";
-
   var progress = document.getElementById("progress");
   var volume = document.getElementById("volume");
   var playBtn = document.getElementById("play");
@@ -46,31 +36,28 @@ if (typeof window !== "undefined") {
   var youtubeInput = document.getElementById("youtube-link");
   var youtubeBtn = document.getElementById("play-youtube");
 
+  audio.setAttribute("preload", "auto");
+  audio.controls = false;
+  audio.style.display = "none";
+
   // Loop & Theme State
   var isLooping = JSON.parse(localStorage.getItem("loopEnabled") || "false");
   var theme = localStorage.getItem("theme") || "dark";
-
   audio.loop = isLooping;
   loopBtn.style.color = isLooping ? "cyan" : "white";
   themeToggle.checked = theme === "light";
-  document.body.style.background =
-    theme === "light"
-      ? "#f0f0f0"
-      : "linear-gradient(135deg, #0f0c29, #000000, #0f0f13)";
+  document.body.style.background = theme === "light" ? "#f0f0f0" : "linear-gradient(135deg,#0f0c29,#000,#0f0f13)";
   document.body.style.color = theme === "light" ? "#222" : "white";
 
-  // Upload & Save to IndexedDB
+  // Upload & Save
   uploadBtn.onclick = function () { fileInput.click(); };
-
   fileInput.onchange = function () {
     var file = fileInput.files && fileInput.files[0];
     if (!file) return;
-
     var reader = new FileReader();
     reader.onload = function (e) {
       var result = e.target && e.target.result;
       if (!result) return;
-
       if (db) saveSongToDB(file.name, result);
       playSong(result, file.name);
     };
@@ -79,8 +66,8 @@ if (typeof window !== "undefined") {
 
   function saveSongToDB(name, buffer) {
     if (!db) return;
-    var transaction = db.transaction(["songs"], "readwrite");
-    var store = transaction.objectStore("songs");
+    var tx = db.transaction(["songs"], "readwrite");
+    var store = tx.objectStore("songs");
     store.put({ name: name, data: buffer });
     localStorage.setItem("lastSong", name);
   }
@@ -89,15 +76,11 @@ if (typeof window !== "undefined") {
     if (!db) return;
     var lastSong = localStorage.getItem("lastSong");
     if (!lastSong) return;
-
-    var transaction = db.transaction(["songs"], "readonly");
-    var store = transaction.objectStore("songs");
-    var request = store.get(lastSong);
-
-    request.onsuccess = function () {
-      if (request.result) {
-        playSong(request.result.data, request.result.name);
-      }
+    var tx = db.transaction(["songs"], "readonly");
+    var store = tx.objectStore("songs");
+    var req = store.get(lastSong);
+    req.onsuccess = function () {
+      if (req.result) playSong(req.result.data, req.result.name);
     };
   }
 
@@ -106,45 +89,31 @@ if (typeof window !== "undefined") {
     audio.loop = isLooping;
     audio.play().then(function () { playBtn.textContent = "⏸️"; });
     songTitle.textContent = name;
-    albumArt.src = "album.jpg";
+    // Inline placeholder instead of album.jpg
+    albumArt.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNjY2MiIC8+PHRleHQgeD0iNTAiIHk9IjUwIiBmb250LXNpemU9IjE2IiBmb250LXdlaWdodD0iYm9sZCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzAwMCI+QWxidW0gPC90ZXh0Pjwvc3ZnPg==";
   }
 
-  // Core Player Controls
+  // Core Controls
   playBtn.onclick = function () {
-    if (audio.paused) {
-      audio.play();
-      playBtn.textContent = "⏸️";
-    } else {
-      audio.pause();
-      playBtn.textContent = "▶️";
-    }
+    if (audio.paused) { audio.play(); playBtn.textContent = "⏸️"; }
+    else { audio.pause(); playBtn.textContent = "▶️"; }
   };
-
   loopBtn.onclick = function () {
     isLooping = !isLooping;
     audio.loop = isLooping;
     loopBtn.style.color = isLooping ? "cyan" : "white";
     localStorage.setItem("loopEnabled", JSON.stringify(isLooping));
   };
-
   themeToggle.onchange = function () {
     theme = themeToggle.checked ? "light" : "dark";
     localStorage.setItem("theme", theme);
-    document.body.style.background =
-      theme === "light"
-        ? "#f0f0f0"
-        : "linear-gradient(135deg, #0e0e14ff, #000000, #0f0f13)";
+    document.body.style.background = theme === "light" ? "#f0f0f0" : "linear-gradient(135deg,#0e0e14,#000,#0f0f13)";
     document.body.style.color = theme === "light" ? "#222" : "white";
   };
 
-  // Progress Bar
-  audio.ontimeupdate = function () {
-    if (audio.duration) progress.value = ((audio.currentTime / audio.duration) * 100);
-  };
-
-  progress.oninput = function () {
-    audio.currentTime = (parseFloat(progress.value) / 100) * audio.duration;
-  };
+  // Progress
+  audio.ontimeupdate = function () { if (audio.duration) progress.value = ((audio.currentTime / audio.duration) * 100); };
+  progress.oninput = function () { audio.currentTime = (parseFloat(progress.value) / 100) * audio.duration; };
 
   // Volume
   volume.oninput = function () { audio.volume = parseFloat(volume.value); };
@@ -155,14 +124,12 @@ if (typeof window !== "undefined") {
   forwardBtn.onclick = function () { audio.currentTime = Math.min(audio.currentTime + 10, audio.duration); };
   backwardBtn.onclick = function () { audio.currentTime = Math.max(audio.currentTime - 10, 0); };
 
-  // YouTube Audio Playback
+  // YouTube Playback
   youtubeBtn.onclick = async function () {
     var url = youtubeInput.value.trim();
     if (!url) return alert("Please paste a YouTube link.");
-
     var match = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
     if (!match) return alert("Invalid YouTube link!");
-
     var videoId = match[1];
     var mirrors = [
       "https://pipedapi.in.projectsegfau.lt",
@@ -170,7 +137,6 @@ if (typeof window !== "undefined") {
       "https://pipedapi.moomoo.me",
       "https://pipedapi.palveluntarjoaja.eu"
     ];
-
     var data;
     for (var i = 0; i < mirrors.length; i++) {
       var base = mirrors[i];
@@ -181,19 +147,14 @@ if (typeof window !== "undefined") {
         if (data && data.audioStreams) break;
       } catch (e) {}
     }
-
     if (!data || !data.audioStreams) return alert("Failed to load YouTube audio.");
-
-    var audioStream = data.audioStreams.find(function (s) {
-      return s.audioOnly && s.mimeType.includes("audio/mp4");
-    });
+    var audioStream = data.audioStreams.find(function (s) { return s.audioOnly && s.mimeType.includes("audio/mp4"); });
     if (!audioStream) return alert("No playable audio found.");
-
     audio.src = audioStream.url;
     audio.loop = isLooping;
     await audio.play();
     playBtn.textContent = "⏸️";
     songTitle.textContent = data.title || "YouTube Audio";
-    albumArt.src = data.thumbnailUrl || "yt.jpg";
+    albumArt.src = data.thumbnailUrl || albumArt.src;
   };
 }
