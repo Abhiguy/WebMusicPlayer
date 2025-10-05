@@ -33,6 +33,8 @@ const albumArt = document.getElementById("album-art");
 const themeToggle = document.getElementById("themeToggle");
 const forwardBtn = document.getElementById("forward");
 const backwardBtn = document.getElementById("backward");
+const youtubeInput = document.getElementById("youtube-link");
+const youtubeBtn = document.getElementById("play-youtube");
 
 // Loop & Theme State
 let isLooping = JSON.parse(localStorage.getItem("loopEnabled")) || false;
@@ -41,7 +43,10 @@ let theme = localStorage.getItem("theme") || "dark";
 audio.loop = isLooping;
 loopBtn.style.color = isLooping ? "cyan" : "white";
 themeToggle.checked = theme === "light";
-document.body.style.background = theme === "light" ? "#f0f0f0" : "linear-gradient(135deg, #0f0c29, #302b63, #24243e)";
+document.body.style.background =
+  theme === "light"
+    ? "#f0f0f0"
+    : "linear-gradient(135deg, #0f0c29, #000000, #0f0f13)";
 document.body.style.color = theme === "light" ? "#222" : "white";
 
 // Upload & Save to IndexedDB
@@ -83,13 +88,9 @@ function loadLastSong() {
 }
 
 function playSong(arrayBuffer, name) {
-  const blob = new Blob([arrayBuffer], { type: "audio/mp3" });
-  const url = URL.createObjectURL(blob);
-  audio.src = url;
-  audio.loop = isLooping; // ✅ Fix: Apply loop on new song
-  audio.play().then(() => {
-    playBtn.textContent = "⏸️";
-  });
+  audio.src = URL.createObjectURL(new Blob([arrayBuffer], { type: "audio/mp3" }));
+  audio.loop = isLooping;
+  audio.play().then(() => (playBtn.textContent = "⏸️"));
   songTitle.textContent = name;
   albumArt.src = "album.jpg";
 }
@@ -115,15 +116,16 @@ loopBtn.onclick = () => {
 themeToggle.onchange = () => {
   theme = themeToggle.checked ? "light" : "dark";
   localStorage.setItem("theme", theme);
-  document.body.style.background = theme === "light" ? "#f0f0f0" : "linear-gradient(135deg, #0f0c29, #302b63, #24243e)";
+  document.body.style.background =
+    theme === "light"
+      ? "#f0f0f0"
+      : "linear-gradient(135deg, #0e0e14ff, #000000, #0f0f13)";
   document.body.style.color = theme === "light" ? "#222" : "white";
 };
 
 // Progress Bar
 audio.ontimeupdate = () => {
-  if (audio.duration) {
-    progress.value = (audio.currentTime / audio.duration) * 100;
-  }
+  if (audio.duration) progress.value = (audio.currentTime / audio.duration) * 100;
 };
 
 progress.oninput = () => {
@@ -131,18 +133,53 @@ progress.oninput = () => {
 };
 
 // Volume
-volume.oninput = () => {
-  audio.volume = parseFloat(volume.value);
-};
-
+volume.oninput = () => (audio.volume = parseFloat(volume.value));
 volume.value = 0.8;
 audio.volume = 0.8;
 
 // Forward / Backward
-forwardBtn.onclick = () => {
-  audio.currentTime = Math.min(audio.currentTime + 10, audio.duration);
-};
+forwardBtn.onclick = () => (audio.currentTime = Math.min(audio.currentTime + 10, audio.duration));
+backwardBtn.onclick = () => (audio.currentTime = Math.max(audio.currentTime - 10, 0));
 
-backwardBtn.onclick = () => {
-  audio.currentTime = Math.max(audio.currentTime - 10, 0);
+// ===============================
+// 🎵 YOUTUBE AUDIO PLAYBACK 🎵
+// ===============================
+youtubeBtn.onclick = async () => {
+  const url = youtubeInput.value.trim();
+  if (!url) return alert("Please paste a YouTube link.");
+
+  const match = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (!match) return alert("Invalid YouTube link!");
+
+  const videoId = match[1];
+  const mirrors = [
+    "https://pipedapi.in.projectsegfau.lt",
+    "https://pipedapi.kavin.rocks",
+    "https://pipedapi.moomoo.me",
+    "https://pipedapi.palveluntarjoaja.eu"
+  ];
+
+  let data;
+  for (const base of mirrors) {
+    try {
+      const res = await fetch(`${base}/streams/${videoId}`);
+      if (!res.ok) continue;
+      data = await res.json();
+      if (data && data.audioStreams) break;
+    } catch {}
+  }
+
+  if (!data || !data.audioStreams) return alert("Failed to load YouTube audio.");
+
+  const audioStream = data.audioStreams.find(
+    s => s.audioOnly && s.mimeType.includes("audio/mp4")
+  );
+  if (!audioStream) return alert("No playable audio found.");
+
+  audio.src = audioStream.url;
+  audio.loop = isLooping;
+  await audio.play();
+  playBtn.textContent = "⏸️";
+  songTitle.textContent = data.title || "YouTube Audio";
+  albumArt.src = data.thumbnailUrl || "yt.jpg";
 };
